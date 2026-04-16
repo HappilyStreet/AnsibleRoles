@@ -1,0 +1,9 @@
+---
+- name: Test playbook
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create a directory
+      ansible.builtin.file:
+        path: /Users/happilystreet/Desktop/Lessons/Test
+        state: absent
