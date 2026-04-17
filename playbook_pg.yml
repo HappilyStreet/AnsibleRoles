@@ -1,0 +1,48 @@
+---
+name: 'Install postgres and create test db'
+hosts: all
+becomes: true
+
+tasks:
+  - name: 'Getting facts'
+    ansible.builtin.package_facts:
+      manager: auto
+
+  - name: 'Postgres already istalled'
+    debug:
+      msg: "Postgres already installed on host"
+    when: "'postgres' in package_facts.packages"
+
+  - name: 'Install postgres'
+    ansible.builtin.package:
+      name: postgresql
+      state: present
+    when: "'postgres' not in package_facts.packages"
+
+  - name: 'Launch service'
+    ansible.builtin.systemd:
+      name: postgresql
+      state: started
+
+  - name: 'Create database'
+    community.postgresql.postgresql_db
+      name: testdb
+      state: present
+    become_user: postgres
+    become: yes
+
+  - name: 'Create postgres user'
+    community.postgresql.postgresql_user
+      name: {{postgres_user}}
+      password: {{password}}
+      state: present
+      db: testdb
+
+  - name: 'Give {{postgres_user}} right on database'
+    community.postgresql.postgresql_privs
+    name: testdb
+    state: present
+    owner: {{postgres_user}}
+      
+      
+      
