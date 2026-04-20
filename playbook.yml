@@ -1,11 +1,12 @@
 ---
-- name: 'Test connection to my server'
+
+- name: 'Setup all'
   hosts: all
   become: yes
-
-  tasks:
-    - name: 'Ping my server'
-      ping:
-
-
-
+  roles:
+    - role: create_user
+      tags: [user]
+    - role: setup_postgres
+      tags: [postgres]
+    - role: vim_nano
+      tags: [vim_nano]

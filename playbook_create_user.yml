@@ -1,0 +1,27 @@
+---
+- name: 'Create host_user'
+  hosts: all
+  become: yes
+
+  tasks: 
+    - name: 'Create host_user'
+      ansible.builtin.host_user:
+        name: "{{ host_user }}"
+        state: present
+        create_home: yes
+        shell: /bin/bash
+
+    - name: 'Create ssh key for {{ host_user }}'
+      ansible.builtin.host_user:
+        name: "{{ host_user }}"
+        generate_ssh_key: yes
+        ssh_key_type: ed25519
+        ssh_key_file: .ssh/id_ed25519
+
+    - name: 'Display created key'
+      shell: "cat /home/{{ host_user }}/.ssh/id_ed25519"
+      register: ssh_host_user_key
+
+    - name: "Show created {{ host_user }} key"
+      debug:
+        msg: "{{ ssh_host_user_key.stdout_lines }}"

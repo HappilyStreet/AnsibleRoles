@@ -1,48 +1,73 @@
 ---
-name: 'Install postgres and create test db'
-hosts: all
-becomes: true
+- name: 'Install postgres and create test db'
+  hosts: all
+  become: yes
 
-tasks:
-  - name: 'Getting facts'
-    ansible.builtin.package_facts:
-      manager: auto
+  tasks:
+    - name: 'Getting facts'
+      ansible.builtin.package_facts:
+        manager: auto
 
-  - name: 'Postgres already istalled'
-    debug:
-      msg: "Postgres already installed on host"
-    when: "'postgres' in package_facts.packages"
+    - name: 'Postgres already istalled'
+      debug:
+        msg: "Postgres already installed on host"
+      when: "'postgres' in ansible_facts.packages"
 
-  - name: 'Install postgres'
-    ansible.builtin.package:
-      name: postgresql
-      state: present
-    when: "'postgres' not in package_facts.packages"
+    - name: 'Install postgres'
+      ansible.builtin.package:
+        name: postgresql
+        state: present
+      when: "'postgres' not in ansible_facts.packages"
 
-  - name: 'Launch service'
-    ansible.builtin.systemd:
-      name: postgresql
-      state: started
+    - name: 'Launch service'
+      ansible.builtin.systemd:
+        name: postgresql
+        state: started
 
-  - name: 'Create database'
-    community.postgresql.postgresql_db
-      name: testdb
-      state: present
-    become_user: postgres
-    become: yes
+    - name: 'Check pip3 file'
+      ansible.builtin.stat:
+        path: /usr/bin/pip3
+      register: pip3_stat
 
-  - name: 'Create postgres user'
-    community.postgresql.postgresql_user
-      name: {{postgres_user}}
-      password: {{password}}
-      state: present
-      db: testdb
+    - name: 'Instal pip3'
+      ansible.builtin.package:
+        name: python3-pip
+        state: present
+      when: not pip3_stat.stat.exists
 
-  - name: 'Give {{postgres_user}} right on database'
-    community.postgresql.postgresql_privs
-    name: testdb
-    state: present
-    owner: {{postgres_user}}
+    - name: 'Check library psycopg2 installed'
+      debug:
+        msg: "psycopg2 already installed on host"
+      when: "'python3-psycopg2' in ansible_facts.packages"
+
+    - name: 'Instal psycopg2'
+      ansible.builtin.apt:
+        name: python3-psycopg2
+        state: present
+      when: "'python3-psycopg2' not in ansible_facts.packages"
+
+    - name: 'Create database'
+      community.postgresql.postgresql_db:
+        name: testdb
+        state: present
+      become_user: postgres
+      become: yes
+
+    - name: 'Create postgres user'
+      ansible.builtin.shell: |
+        psql -c "CREATE USER {{ pg_user }} WITH PASSWORD '{{ pg_pass }}';"
+      become: yes
+      become_user: postgres
+      register: result
+      failed_when: result.rc != 0 and 'already exists' not in result.stderr
+
+    - name: 'Give {{ pg_user }} right on database'
+      ansible.builtin.shell: |
+        psql -c "ALTER DATABASE testdb OWNER TO {{ pg_user }};"
+      become: yes
+      become_user: postgres
+    
+
       
       
       
