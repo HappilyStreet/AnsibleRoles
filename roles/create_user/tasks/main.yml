@@ -2,14 +2,14 @@
 ---
 # tasks file for create_user
 - name: 'Create host_user'
-  ansible.builtin.host_user:
+  ansible.builtin.user:
     name: "{{ host_user }}"
     state: present
     create_home: yes
     shell: /bin/bash
 
 - name: 'Create ssh key for {{ host_user }}'
-  ansible.builtin.host_user:
+  ansible.builtin.user:
     name: "{{ host_user }}"
     generate_ssh_key: yes
     ssh_key_type: ed25519
